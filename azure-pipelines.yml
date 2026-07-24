@@ -1,0 +1,76 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  - name: azureServiceConnection
+    value: 'sc-azure-12taste'
+  - name: workingDirectory
+    value: '$(System.DefaultWorkingDirectory)/12taste-lakehouse-platform/terraform'
+
+stages:
+  - stage: Terraform_Plan
+    displayName: 'Validate & Plan'
+    jobs:
+      - job: Plan
+        steps:
+          - task: TerraformInstaller@1
+            displayName: 'Install Terraform'
+            inputs:
+              terraformVersion: 'latest'
+
+          - task: TerraformTaskV4@4
+            displayName: 'Terraform Init'
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              workingDirectory: '$(workingDirectory)'
+              backendServiceArm: '$(azureServiceConnection)'
+              backendAzureRmResourceGroupName: 'rg-12taste-lakehouse-prod'
+              backendAzureRmStorageAccountName: 'smistry12tlakehouse'
+              backendAzureRmContainerName: 'bronze'
+              backendAzureRmKey: 'terraform.tfstate'
+              backendAzureRmUseEntraIdForAuthentication: true
+
+          - task: TerraformTaskV4@4
+            displayName: 'Terraform Plan'
+            inputs:
+              provider: 'azurerm'
+              command: 'plan'
+              workingDirectory: '$(workingDirectory)'
+              environmentServiceNameAzureRM: '$(azureServiceConnection)'
+
+  - stage: Terraform_Apply
+    displayName: 'Deploy Infrastructure'
+    condition: succeeded()
+    jobs:
+      - job: Apply
+        steps:
+          - task: TerraformInstaller@1
+            displayName: 'Install Terraform'
+            inputs:
+              terraformVersion: 'latest'
+
+          - task: TerraformTaskV4@4
+            displayName: 'Terraform Init'
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              workingDirectory: '$(workingDirectory)'
+              backendServiceArm: '$(azureServiceConnection)'
+              backendAzureRmResourceGroupName: 'rg-12taste-lakehouse-prod'
+              backendAzureRmStorageAccountName: 'smistry12tlakehouse'
+              backendAzureRmContainerName: 'bronze'
+              backendAzureRmKey: 'terraform.tfstate'
+              backendAzureRmUseEntraIdForAuthentication: true
+
+          - task: TerraformTaskV4@4
+            displayName: 'Terraform Apply'
+            inputs:
+              provider: 'azurerm'
+              command: 'apply'
+              workingDirectory: '$(workingDirectory)'
+              environmentServiceNameAzureRM: '$(azureServiceConnection)'
+              commandOptions: '-auto-approve'
