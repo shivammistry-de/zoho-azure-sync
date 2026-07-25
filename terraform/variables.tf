@@ -1,13 +1,13 @@
 variable "subscription_id" {
   type        = string
   description = "Azure Subscription ID"
-  default     = "0097149f-53b8-4433-869e-feb6129dbdc5"
+  default     = null
 }
 
 variable "tenant_id" {
   type        = string
-  description = "Azure Tenant ID or Domain Name"
-  default     = "jasperschouten12taste.onmicrosoft.com"
+  description = "Azure Tenant ID"
+  default     = null
 }
 
 variable "location" {
