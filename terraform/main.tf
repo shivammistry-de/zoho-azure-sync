@@ -35,10 +35,17 @@ data "azurerm_storage_account" "adls" {
   resource_group_name = data.azurerm_resource_group.rg.name
 }
 
-# 3. Reference Existing Databricks Workspace
-data "azurerm_databricks_workspace" "databricks" {
+# 3. Create Databricks Workspace
+resource "azurerm_databricks_workspace" "databricks" {
   name                = var.databricks_workspace_name
   resource_group_name = data.azurerm_resource_group.rg.name
+  location            = data.azurerm_resource_group.rg.location
+  sku                 = "premium"
+
+  tags = {
+    Environment = "Production"
+    ManagedBy   = "Terraform"
+  }
 }
 
 # 4. Medallion Layer Containers
@@ -54,7 +61,7 @@ resource "azurerm_storage_container" "gold" {
   container_access_type = "private"
 }
 
-# 5. Access Connector for Azure Databricks (Managed Identity for Unity Catalog)
+# 5. Access Connector for Azure Databricks
 resource "azurerm_databricks_access_connector" "uc_connector" {
   name                = "ac-${var.storage_prefix}-uc"
   resource_group_name = data.azurerm_resource_group.rg.name
@@ -65,7 +72,7 @@ resource "azurerm_databricks_access_connector" "uc_connector" {
   }
 }
 
-# 6. Dedicated Storage Container for Unity Catalog Root Metastore
+# 6. Storage Container for Unity Catalog Root Metastore
 resource "azurerm_storage_container" "uc_metastore_root" {
   name                  = "uc-metastore-root"
   storage_account_name  = data.azurerm_storage_account.adls.name
