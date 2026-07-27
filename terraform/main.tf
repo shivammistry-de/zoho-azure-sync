@@ -1,4 +1,4 @@
-terraform {
+﻿terraform {
   required_version = ">= 1.0.0"
   required_providers {
     azurerm = {
@@ -7,7 +7,6 @@ terraform {
     }
   }
 
-  # Remote backend using the container bootstrapped in Step 1
   backend "azurerm" {
     resource_group_name  = "rg-12taste-lakehouse-prod"
     storage_account_name = "smistry12tlakehouse"
@@ -25,7 +24,7 @@ provider "azurerm" {
   tenant_id       = var.tenant_id != "" ? var.tenant_id : null
 }
 
-# 1. Reference Existing Resource Group
+# 1. Reference Existing Resource Group (DATA block, NOT resource block)
 data "azurerm_resource_group" "rg" {
   name = var.resource_group_name
 }
