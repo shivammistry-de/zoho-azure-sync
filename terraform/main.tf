@@ -24,7 +24,7 @@ provider "azurerm" {
   tenant_id       = var.tenant_id != "" ? var.tenant_id : null
 }
 
-# 1. Reference Existing Resource Group (DATA block, NOT resource block)
+# 1. Reference Existing Resource Group
 data "azurerm_resource_group" "rg" {
   name = var.resource_group_name
 }
@@ -35,7 +35,13 @@ data "azurerm_storage_account" "adls" {
   resource_group_name = data.azurerm_resource_group.rg.name
 }
 
-# 3. Medallion Layer Containers (Silver and Gold)
+# 3. Reference Existing Databricks Workspace
+data "azurerm_databricks_workspace" "databricks" {
+  name                = var.databricks_workspace_name
+  resource_group_name = data.azurerm_resource_group.rg.name
+}
+
+# 4. Medallion Layer Containers
 resource "azurerm_storage_container" "silver" {
   name                  = "silver"
   storage_account_name  = data.azurerm_storage_account.adls.name
@@ -46,19 +52,6 @@ resource "azurerm_storage_container" "gold" {
   name                  = "gold"
   storage_account_name  = data.azurerm_storage_account.adls.name
   container_access_type = "private"
-}
-
-# 4. Azure Databricks Workspace (Premium required for Unity Catalog)
-resource "azurerm_databricks_workspace" "databricks" {
-  name                = var.databricks_workspace_name
-  resource_group_name = data.azurerm_resource_group.rg.name
-  location            = data.azurerm_resource_group.rg.location
-  sku                 = "premium"
-
-  tags = {
-    Environment = "Production"
-    ManagedBy   = "Terraform"
-  }
 }
 
 # 5. Access Connector for Azure Databricks (Managed Identity for Unity Catalog)
@@ -77,11 +70,4 @@ resource "azurerm_storage_container" "uc_metastore_root" {
   name                  = "uc-metastore-root"
   storage_account_name  = data.azurerm_storage_account.adls.name
   container_access_type = "private"
-}
-
-# 7. Grant Storage Permissions to Unity Catalog's Identity
-resource "azurerm_role_assignment" "uc_storage_assignment" {
-  scope                = data.azurerm_storage_account.adls.id
-  role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = azurerm_databricks_access_connector.uc_connector.identity[0].principal_id
 }
